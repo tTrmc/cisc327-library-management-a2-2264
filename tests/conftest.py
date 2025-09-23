@@ -1,3 +1,7 @@
+"""
+This file just creates a test database before each test and deletes it after the test
+"""
+
 import pytest
 import os
 from database import init_database
