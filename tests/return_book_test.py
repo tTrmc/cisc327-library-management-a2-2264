@@ -86,6 +86,18 @@ def test_return_book_not_borrowed_by_patron():
     assert "not borrowed" in message.lower()
 
 
+def test_return_book_with_isbn_input():
+    """Test returning a book using the ISBN instead of the numeric ID."""
+    isbn = "1234500000003"
+    add_book_to_catalog("Return With ISBN", "Test Author", isbn, 5)
+    book_id = _book_id_for_isbn(isbn)
+    borrow_book_by_patron("123456", book_id)
+    success, message = return_book_by_patron("123456", isbn)
+
+    assert success is True
+    assert "successfully returned" in message.lower()
+
+
 def test_return_book_already_returned():
     """Test returning a book that was already returned."""
     isbn = "1234500000002"

@@ -231,16 +231,31 @@ def return_book_by_patron(patron_id: str, book_id: int) -> Tuple[bool, str]:
     if not is_valid:
         return False, error_message
 
-    try:
-        book_id_int = int(book_id)
-    except (TypeError, ValueError):
+    raw_book_id = str(book_id).strip() if book_id is not None else ""
+    if not raw_book_id:
         return False, "Invalid book ID."
 
-    if book_id_int <= 0:
-        return False, "Invalid book ID."
+    book = None
+    book_id_int: Optional[int] = None
 
-    book = get_book_by_id(book_id_int)
+    if raw_book_id.isdigit():
+        try:
+            candidate_id = int(raw_book_id)
+        except (TypeError, ValueError):
+            candidate_id = None
+        if candidate_id and candidate_id > 0:
+            book = get_book_by_id(candidate_id)
+            if book:
+                book_id_int = candidate_id
+
     if not book:
+        normalized_isbn = raw_book_id.replace("-", "")
+        if len(normalized_isbn) == 13 and normalized_isbn.isdigit():
+            book = get_book_by_isbn(normalized_isbn)
+            if book:
+                book_id_int = book["id"]
+
+    if not book or book_id_int is None:
         return False, "Book not found."
 
     active_record = _get_active_borrow_record(normalized_patron_id, book_id_int)

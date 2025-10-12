@@ -45,7 +45,7 @@
 
 #### 3. return_book_test.py
 **Function Tested**: `return_book_by_patron`
-**Total Test Cases**: 8
+**Total Test Cases**: 9
 **Test Cases**:
 - `test_return_book_valid_input()` - Confirms availability resets and no-fee messaging for timely returns
 - `test_return_book_patron_id_too_short()` - Patron ID validation (less than 6 digits)
@@ -53,6 +53,7 @@
 - `test_return_book_patron_id_too_long()` - Patron ID validation (more than 6 digits)
 - `test_return_book_not_found()` - Invalid book ID handling
 - `test_return_book_not_borrowed_by_patron()` - Book not borrowed by patron validation
+- `test_return_book_with_isbn_input()` - Verifies ISBN-based returns locate the borrowed copy
 - `test_return_book_already_returned()` - Late fee messaging and already-returned handling
 - `test_return_book_patron_id_empty()` - Empty patron ID validation
 

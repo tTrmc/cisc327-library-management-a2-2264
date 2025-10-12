@@ -37,15 +37,14 @@ def return_book():
         return render_template('return_book.html')
     
     patron_id = request.form.get('patron_id', '').strip()
-    
-    try:
-        book_id = int(request.form.get('book_id', ''))
-    except (ValueError, TypeError):
+    book_identifier = request.form.get('book_id', '').strip()
+
+    if not book_identifier:
         flash('Invalid book ID.', 'error')
         return render_template('return_book.html')
     
     # Use business logic function
-    success, message = return_book_by_patron(patron_id, book_id)
+    success, message = return_book_by_patron(patron_id, book_identifier)
     
     flash(message, 'success' if success else 'error')
     return render_template('return_book.html')
