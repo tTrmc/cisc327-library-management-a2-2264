@@ -1,13 +1,13 @@
 # Moustafa Salem 20442264 Group 4
 
-| Function Name               | Implementation Status | What is Missing                                                                                                                     |
-|-----------------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------|
-| add_book_to_catalog         | complete              | None                                                                                                                                |
-| borrow_book_by_patron       | complete              | None                                                                                                                                |
-| return_book_by_patron       | partial               | Only returns error message, needs patron/book validation, borrow record verification, availability update, and late fee calculation |
-| calculate_late_fee_for_book | partial               | Complete fee calculation logic, overdue date checking, tiered fee structure, and proper return format                               |
-| search_books_in_catalog     | partial               | Only returns empty list, needs search term validation, database query logic, and filtering by search type (title/author/isbn)       |
-| get_patron_status_report    | partial               | Only returns empty dict, needs borrowed books retrieval, due date calculation, late fees summation, and borrowing history           |
+| Function Name               | Implementation Status | What is Missing |
+|-----------------------------|-----------------------|-----------------|
+| add_book_to_catalog         | complete              | None            |
+| borrow_book_by_patron       | complete              | None            |
+| return_book_by_patron       | complete              | None            |
+| calculate_late_fee_for_book | complete              | None            |
+| search_books_in_catalog     | complete              | None            |
+| get_patron_status_report    | complete              | None            |
 
 ## Unit Test Scripts Summary
 
@@ -47,23 +47,24 @@
 **Function Tested**: `return_book_by_patron`
 **Total Test Cases**: 8
 **Test Cases**:
-- `test_return_book_valid_input()` - Positive test with valid book return
+- `test_return_book_valid_input()` - Confirms availability resets and no-fee messaging for timely returns
 - `test_return_book_patron_id_too_short()` - Patron ID validation (less than 6 digits)
 - `test_return_book_patron_id_invalid()` - Patron ID format validation (non-numeric)
 - `test_return_book_patron_id_too_long()` - Patron ID validation (more than 6 digits)
 - `test_return_book_not_found()` - Invalid book ID handling
 - `test_return_book_not_borrowed_by_patron()` - Book not borrowed by patron validation
-- `test_return_book_already_returned()` - Already returned book handling
+- `test_return_book_already_returned()` - Late fee messaging and already-returned handling
 - `test_return_book_patron_id_empty()` - Empty patron ID validation
 
 #### 4. calculate_late_fee_test.py
 **Function Tested**: `calculate_late_fee_for_book`
-**Total Test Cases**: 10
+**Total Test Cases**: 11
 **Test Cases**:
 - `test_calculate_late_fee_no_overdue()` - No late fee for on-time returns
 - `test_calculate_late_fee_first_week_overdue()` - Fee calculation for first week overdue ($0.50/day)
 - `test_calculate_late_fee_after_first_week()` - Mixed rate calculation (7 days at $0.50 + additional at $1.00)
 - `test_calculate_late_fee_maximum_cap()` - Maximum fee cap validation ($15.00)
+- `test_calculate_late_fee_returned_book()` - Late fee summary after return date is recorded
 - `test_calculate_late_fee_patron_id_too_short()` - Patron ID validation (less than 6 digits)
 - `test_calculate_late_fee_patron_id_invalid()` - Patron ID format validation (non-numeric)
 - `test_calculate_late_fee_patron_id_too_long()` - Patron ID validation (more than 6 digits)
@@ -91,12 +92,15 @@
 **Total Test Cases**: 10
 **Test Cases**:
 - `test_get_patron_status_valid_with_borrowed_books()` - Patron status with active borrowed books
-- `test_get_patron_status_valid_no_borrowed_books()` - Patron status with no borrowed books
-- `test_get_patron_status_with_overdue_books()` - Patron status including overdue book information
+- `test_get_patron_status_valid_no_borrowed_books()` - Patron status after all loans are returned with history recorded
+- `test_get_patron_status_with_overdue_books()` - Patron status including overdue book information and accrued fees
 - `test_get_patron_status_patron_id_too_short()` - Patron ID validation (less than 6 digits)
 - `test_get_patron_status_patron_id_invalid()` - Patron ID format validation (non-numeric)
 - `test_get_patron_status_patron_id_too_long()` - Patron ID validation (more than 6 digits)
 - `test_get_patron_status_patron_id_empty()` - Empty patron ID handling
-- `test_get_patron_status_multiple_borrowed_books()` - Multiple borrowed books status
+- `test_get_patron_status_multiple_borrowed_books()` - Multiple borrowed books status and total fee aggregation
 - `test_get_patron_status_nonexistent_patron()` - Patron with no borrowing history
 - `test_get_patron_status_patron_id_whitespace()` - Whitespace in patron ID handling
+
+## Implementation Experience
+Completing the remaining service layer work is now fully complete. Implementing shared helpers for patron validation and overdue math made it easier to align return processing, late-fee calculation, search, and reporting behaviour while keeping the database interactions consistent. Updating the tests alongside the code surfaced edge cases (like handling returned items in fee summaries) and confirmed the new logic behaves as intended across timely, overdue, and whitespace-heavy inputs.
