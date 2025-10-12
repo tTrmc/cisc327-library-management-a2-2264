@@ -2,6 +2,9 @@
 
 ## Overview
 
+[![Python Tests](https://github.com/tTrmc/CISC327-CMPE327-F25/actions/workflows/python-tests.yml/badge.svg)](https://github.com/tTrmc/CISC327-CMPE327-F25/actions/workflows/python-tests.yml)
+[![codecov](https://codecov.io/gh/tTrmc/CISC327-CMPE327-F25/graph/badge.svg?token=CVV7M4024T)](https://codecov.io/gh/tTrmc/CISC327-CMPE327-F25)
+
 This project contains a partial implementation of a Flask-based Library Management System with SQLite database, designed for CISC 327 (Software Quality Assurance) coursework.
 
 Students are provided with:
