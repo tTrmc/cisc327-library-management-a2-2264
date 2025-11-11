@@ -105,3 +105,4 @@
 
 ## Implementation Experience
 Completing the remaining service layer work is now fully complete. Implementing shared helpers for patron validation and overdue math made it easier to align return processing, late-fee calculation, search, and reporting behaviour while keeping the database interactions consistent. Updating the tests alongside the code surfaced edge cases (like handling returned items in fee summaries) and confirmed the new logic behaves as intended across timely, overdue, and whitespace-heavy inputs.
+
