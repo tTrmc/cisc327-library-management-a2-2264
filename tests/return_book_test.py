@@ -2,7 +2,7 @@ import pytest
 from datetime import datetime, timedelta
 
 from database import get_book_by_isbn, get_book_by_id, get_db_connection
-from library_service import (
+from services.library_service import (
     return_book_by_patron,
     add_book_to_catalog,
     borrow_book_by_patron

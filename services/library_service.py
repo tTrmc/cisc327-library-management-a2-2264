@@ -18,8 +18,10 @@ from database import (
     get_db_connection,
     get_patron_borrowed_books
 )
+from .payment_service import PaymentGateway, PaymentGatewayError
 
 DATE_OUTPUT_FORMAT = "%Y-%m-%d"
+MAX_LATE_FEE = 15.00
 
 
 def _normalize_patron_id(patron_id: Optional[str]) -> str:
@@ -337,6 +339,194 @@ def calculate_late_fee_for_book(patron_id: str, book_id: int) -> Dict:
         'status': status,
         'due_date': _format_date(due_date),
         'return_date': _format_date(return_date)
+    }
+
+
+def pay_late_fees(patron_id: str, book_id: int, payment_gateway: PaymentGateway) -> Dict:
+    """Collect outstanding late fees for a patron by invoking the payment gateway."""
+    if payment_gateway is None:
+        return {
+            'success': False,
+            'status': 'Payment gateway is unavailable.',
+            'transaction_id': None,
+            'patron_id': patron_id,
+            'book_id': book_id,
+            'amount': 0.0
+        }
+
+    is_valid, normalized_patron_id, error_message = _validate_patron_id(patron_id)
+    if not is_valid:
+        return {
+            'success': False,
+            'status': error_message,
+            'transaction_id': None,
+            'patron_id': normalized_patron_id,
+            'book_id': book_id,
+            'amount': 0.0
+        }
+
+    try:
+        book_id_int = int(book_id)
+    except (TypeError, ValueError):
+        return {
+            'success': False,
+            'status': 'Invalid book ID.',
+            'transaction_id': None,
+            'patron_id': normalized_patron_id,
+            'book_id': book_id,
+            'amount': 0.0
+        }
+
+    if book_id_int <= 0:
+        return {
+            'success': False,
+            'status': 'Invalid book ID.',
+            'transaction_id': None,
+            'patron_id': normalized_patron_id,
+            'book_id': book_id_int,
+            'amount': 0.0
+        }
+
+    book = get_book_by_id(book_id_int)
+    if not book:
+        return {
+            'success': False,
+            'status': 'Book not found.',
+            'transaction_id': None,
+            'patron_id': normalized_patron_id,
+            'book_id': book_id_int,
+            'amount': 0.0
+        }
+
+    fee_summary = calculate_late_fee_for_book(normalized_patron_id, book_id_int)
+    fee_amount = round(float(fee_summary.get('fee_amount', 0.0)), 2)
+    if fee_amount <= 0:
+        return {
+            'success': False,
+            'status': 'No outstanding late fees.',
+            'transaction_id': None,
+            'patron_id': normalized_patron_id,
+            'book_id': book_id_int,
+            'amount': 0.0
+        }
+
+    description = f"Late fee for {book['title']}"
+    try:
+        gateway_response = payment_gateway.process_payment(normalized_patron_id, fee_amount, description=description)
+    except PaymentGatewayError as exc:
+        return {
+            'success': False,
+            'status': f'Payment failed: {exc}',
+            'transaction_id': None,
+            'patron_id': normalized_patron_id,
+            'book_id': book_id_int,
+            'amount': fee_amount
+        }
+    except Exception as exc:  # pragma: no cover - defensive guard
+        return {
+            'success': False,
+            'status': f'Unexpected payment error: {exc}',
+            'transaction_id': None,
+            'patron_id': normalized_patron_id,
+            'book_id': book_id_int,
+            'amount': fee_amount
+        }
+
+    transaction_id = getattr(gateway_response, 'transaction_id', None)
+    response_status = str(getattr(gateway_response, 'status', '')).lower()
+    if response_status not in {'success', 'approved'}:
+        return {
+            'success': False,
+            'status': 'Payment was declined by the gateway.',
+            'transaction_id': transaction_id,
+            'patron_id': normalized_patron_id,
+            'book_id': book_id_int,
+            'amount': fee_amount
+        }
+
+    return {
+        'success': True,
+        'status': 'Late fee payment completed.',
+        'transaction_id': transaction_id,
+        'patron_id': normalized_patron_id,
+        'book_id': book_id_int,
+        'amount': fee_amount,
+        'book_title': book['title']
+    }
+
+
+def refund_late_fee_payment(transaction_id: str, amount: float, payment_gateway: PaymentGateway) -> Dict:
+    """Issue late fee refunds by delegating to the payment gateway."""
+    if payment_gateway is None:
+        return {
+            'success': False,
+            'status': 'Payment gateway is unavailable.',
+            'transaction_id': None,
+            'amount': 0.0
+        }
+
+    normalized_transaction_id = (transaction_id or '').strip()
+    if not normalized_transaction_id:
+        return {
+            'success': False,
+            'status': 'Transaction ID is required.',
+            'transaction_id': None,
+            'amount': 0.0
+        }
+
+    try:
+        refund_amount = round(float(amount), 2)
+    except (TypeError, ValueError):
+        return {
+            'success': False,
+            'status': 'Invalid refund amount.',
+            'transaction_id': normalized_transaction_id,
+            'amount': 0.0
+        }
+
+    if refund_amount <= 0:
+        return {
+            'success': False,
+            'status': 'Refund amount must be greater than zero.',
+            'transaction_id': normalized_transaction_id,
+            'amount': refund_amount
+        }
+
+    if refund_amount > MAX_LATE_FEE:
+        return {
+            'success': False,
+            'status': f'Refund cannot exceed ${MAX_LATE_FEE:.2f}.',
+            'transaction_id': normalized_transaction_id,
+            'amount': refund_amount
+        }
+
+    try:
+        gateway_response = payment_gateway.refund_payment(normalized_transaction_id, refund_amount)
+    except PaymentGatewayError as exc:
+        return {
+            'success': False,
+            'status': f'Refund failed: {exc}',
+            'transaction_id': normalized_transaction_id,
+            'amount': refund_amount
+        }
+    except Exception as exc:  # pragma: no cover - defensive guard
+        return {
+            'success': False,
+            'status': f'Unexpected refund error: {exc}',
+            'transaction_id': normalized_transaction_id,
+            'amount': refund_amount
+        }
+
+    transaction_id = getattr(gateway_response, 'transaction_id', None)
+    response_status = str(getattr(gateway_response, 'status', '')).lower()
+    success = response_status in {'refunded', 'success'}
+    status_message = 'Refund issued.' if success else 'Refund rejected by gateway.'
+
+    return {
+        'success': success,
+        'status': status_message,
+        'transaction_id': transaction_id or normalized_transaction_id,
+        'amount': refund_amount
     }
 
 

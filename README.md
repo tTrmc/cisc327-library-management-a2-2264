@@ -17,7 +17,9 @@ Students are provided with:
   - [`api_routes.py`](routes/api_routes.py): JSON API endpoints for late fees and search
   - [`search_routes.py`](routes/search_routes.py): Book search functionality routes
 - [`database.py`](database.py): Database operations and SQLite functions
-- [`library_service.py`](library_service.py): **Business logic functions** (your main testing focus)
+- [`services/`](services/): Modular service layer containing core business logic and integrations
+  - [`library_service.py`](services/library_service.py): **Business logic functions** (your main testing focus)
+  - [`payment_service.py`](services/payment_service.py): Simulated external payment gateway used for mocking/stubbing exercises
 - [`templates/`](templates/): HTML templates for the web interface
 - [`requirements.txt`](requirements.txt): Python dependencies
 
@@ -50,5 +52,4 @@ See [`student_instructions.md`](student_instructions.md) for complete assignment
 - [Test Driven Development](https://www.datacamp.com/tutorial/test-driven-development-in-python)
 - [Pytest framework](https://realpython.com/pytest-python-testing/)
 - [Python Blueprint](https://flask.palletsprojects.com/en/stable/blueprints)
-
 
